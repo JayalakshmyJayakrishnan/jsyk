@@ -1,5 +1,9 @@
-import { useState } from "react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend } from "recharts";
+import React, { useState } from "react";
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
+  ResponsiveContainer, RadarChart, Radar, PolarGrid, 
+  PolarAngleAxis, PolarRadiusAxis, Legend 
+} from "recharts";
 
 const subjectData = [
   { subject: "AIT362-R", failures: 5, absents: 1, passing: 24, total: 30, avg: 34.2 },
@@ -38,23 +42,29 @@ const COLORS = {
   muted: "#64748b",
 };
 
-const CustomBar = ({ x, y, width, height, value }) => {
-  const pct = (value / 30) * 100;
-  const fill = pct > 40 ? "#ef4444" : pct > 25 ? "#f59e0b" : "#22c55e";
+// Updated CustomBar to handle dynamic totals (e.g., the 27 for HUT300)
+const CustomBar = (props) => {
+  const { x, y, width, height, payload } = props;
+  const pct = (payload.failures / payload.total) * 100;
+  const fill = pct > 40 ? COLORS.danger : pct > 25 ? COLORS.warn : COLORS.safe;
   return <rect x={x} y={y} width={width} height={height} fill={fill} rx={4} />;
 };
 
-const AbsentBar = ({ x, y, width, height }) => (
-  <rect x={x} y={y} width={width} height={height} fill="#7c3aed" rx={4} />
-);
+const AbsentBar = (props) => {
+  const { x, y, width, height } = props;
+  return <rect x={x} y={y} width={width} height={height} fill={COLORS.absent} rx={4} />;
+};
 
 export default function ClassDashboard() {
-  const [activeTab, setActiveTab] = useState("overview");
-
   const totalAbsents = subjectData.reduce((a, b) => a + b.absents, 0);
   const totalFailInstances = subjectData.reduce((a, b) => a + b.failures, 0);
   const worstSubject = subjectData.reduce((a, b) => (a.failures > b.failures ? a : b));
-  const classRiskPct = Math.round(((7 + 3) / 30) * 100);
+  
+  // Calculate risk % based on "Danger" and "Critical" buckets
+  const riskTotal = riskBuckets
+    .filter(b => b.label === "Danger Zone" || b.label === "Critical")
+    .reduce((a, b) => a + b.count, 0);
+  const classRiskPct = Math.round((riskTotal / 30) * 100);
 
   return (
     <div style={{
@@ -67,7 +77,7 @@ export default function ClassDashboard() {
       {/* Header */}
       <div style={{
         background: "linear-gradient(135deg, #1a0000 0%, #0a0a0f 60%)",
-        borderBottom: "2px solid #ef4444",
+        borderBottom: `2px solid ${COLORS.danger}`,
         padding: "28px 32px 20px",
         position: "relative",
         overflow: "hidden",
@@ -79,7 +89,7 @@ export default function ClassDashboard() {
         }} />
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "6px" }}>
           <span style={{ fontSize: "22px" }}>⚠️</span>
-          <span style={{ color: "#ef4444", fontSize: "11px", letterSpacing: "4px", fontWeight: "bold" }}>
+          <span style={{ color: COLORS.danger, fontSize: "11px", letterSpacing: "4px", fontWeight: "bold" }}>
             INTERNAL MARKS — CLASS PERFORMANCE REPORT
           </span>
         </div>
@@ -90,7 +100,7 @@ export default function ClassDashboard() {
           margin: "0 0 4px",
           letterSpacing: "-1px"
         }}>
-          Wake Up, <span style={{ color: "#ef4444" }}>Batch.</span>
+          Wake Up, <span style={{ color: COLORS.danger }}>Batch.</span>
         </h1>
         <p style={{ color: COLORS.muted, fontSize: "13px", margin: 0 }}>
           Report taken: 26-02-2026 · 30 students · 6 subjects
@@ -102,10 +112,10 @@ export default function ClassDashboard() {
         {/* Stat Cards */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px", marginBottom: "24px" }}>
           {[
-            { label: "Fail Instances", value: totalFailInstances, sub: "across all 6 subjects", color: "#ef4444", icon: "❌" },
-            { label: "Students at Risk", value: `${classRiskPct}%`, sub: "failing 3+ subjects", color: "#ef4444", icon: "🚨" },
-            { label: "Absences Logged", value: totalAbsents, sub: "across all subjects", color: "#7c3aed", icon: "🔴" },
-            { label: "Worst Subject", value: worstSubject.subject, sub: `${worstSubject.failures} students failing`, color: "#f59e0b", icon: "📉" },
+            { label: "Fail Instances", value: totalFailInstances, sub: "across all 6 subjects", color: COLORS.danger, icon: "❌" },
+            { label: "Students at Risk", value: `${classRiskPct}%`, sub: "failing 3+ subjects", color: COLORS.danger, icon: "🚨" },
+            { label: "Absences Logged", value: totalAbsents, sub: "across all subjects", color: COLORS.absent, icon: "🔴" },
+            { label: "Worst Subject", value: worstSubject.subject.split('-')[0], sub: `${worstSubject.failures} students failing`, color: COLORS.warn, icon: "📉" },
           ].map((s, i) => (
             <div key={i} style={{
               background: COLORS.card,
@@ -130,11 +140,11 @@ export default function ClassDashboard() {
           padding: "20px",
           marginBottom: "20px",
         }}>
-          <h2 style={{ fontSize: "13px", letterSpacing: "3px", color: "#ef4444", margin: "0 0 4px" }}>
+          <h2 style={{ fontSize: "13px", letterSpacing: "3px", color: COLORS.danger, margin: "0 0 4px" }}>
             SUBJECT-WISE FAILURE COUNT
           </h2>
           <p style={{ fontSize: "11px", color: COLORS.muted, margin: "0 0 20px" }}>
-            Students scoring below passing threshold (out of 30 total)
+            Students scoring below passing threshold
           </p>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={subjectData} barGap={6}>
@@ -142,7 +152,7 @@ export default function ClassDashboard() {
               <XAxis dataKey="subject" tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 15]} />
               <Tooltip
-                contentStyle={{ background: "#1e1e2e", border: "1px solid #ef4444", borderRadius: "6px", fontSize: "12px" }}
+                contentStyle={{ background: "#1e1e2e", border: `1px solid ${COLORS.danger}`, borderRadius: "6px", fontSize: "12px" }}
                 labelStyle={{ color: "#fff" }}
                 formatter={(val, name) => [val + " students", name === "failures" ? "Failing" : "Absent"]}
               />
@@ -155,14 +165,6 @@ export default function ClassDashboard() {
               />
             </BarChart>
           </ResponsiveContainer>
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginTop: "8px" }}>
-            {[["< 30%", "#22c55e", "OK"], ["30–40%", "#f59e0b", "Concerning"], ["> 40%", "#ef4444", "Critical"]].map(([r, c, l]) => (
-              <div key={r} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <div style={{ width: "10px", height: "10px", background: c, borderRadius: "2px" }} />
-                <span style={{ fontSize: "10px", color: COLORS.muted }}>{r} fail rate — {l}</span>
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Student Risk Distribution */}
@@ -173,10 +175,10 @@ export default function ClassDashboard() {
           padding: "20px",
           marginBottom: "20px",
         }}>
-          <h2 style={{ fontSize: "13px", letterSpacing: "3px", color: "#f59e0b", margin: "0 0 4px" }}>
+          <h2 style={{ fontSize: "13px", letterSpacing: "3px", color: COLORS.warn, margin: "0 0 4px" }}>
             STUDENT RISK DISTRIBUTION
           </h2>
-          <p style={{ fontSize: "11px", color: COLORS.muted, margin: "0 0 20px" }}>Where does your class stand right now?</p>
+          <p style={{ fontSize: "11px", color: COLORS.muted, margin: "0 0 20px" }}>Where does the batch stand?</p>
           <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
             {riskBuckets.map((b) => (
               <div key={b.label} style={{
@@ -194,7 +196,6 @@ export default function ClassDashboard() {
                 <div style={{ marginTop: "10px", background: "#ffffff10", borderRadius: "4px", height: "6px", overflow: "hidden" }}>
                   <div style={{ width: `${(b.count / 30) * 100}%`, height: "100%", background: b.color, borderRadius: "4px" }} />
                 </div>
-                <div style={{ fontSize: "10px", color: b.color, marginTop: "4px" }}>{Math.round((b.count / 30) * 100)}%</div>
               </div>
             ))}
           </div>
@@ -208,62 +209,41 @@ export default function ClassDashboard() {
           padding: "20px",
           marginBottom: "20px",
         }}>
-          <h2 style={{ fontSize: "13px", letterSpacing: "3px", color: "#7c3aed", margin: "0 0 4px" }}>
+          <h2 style={{ fontSize: "13px", letterSpacing: "3px", color: COLORS.absent, margin: "0 0 4px" }}>
             CLASS AVERAGE vs MINIMUM THRESHOLD
           </h2>
-          <p style={{ fontSize: "11px", color: COLORS.muted, margin: "0 0 8px" }}>
-            Scores normalized to 100. The red boundary is the passing threshold.
-          </p>
           <ResponsiveContainer width="100%" height={260}>
             <RadarChart data={radarData}>
               <PolarGrid stroke="#1e1e2e" />
               <PolarAngleAxis dataKey="subject" tick={{ fill: "#94a3b8", fontSize: 11 }} />
               <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: "#64748b", fontSize: 9 }} />
-              <Radar name="Class Avg %" dataKey="classAvg" stroke="#7c3aed" fill="#7c3aed" fillOpacity={0.3} strokeWidth={2} />
-              <Radar name="Pass Threshold" dataKey="threshold" stroke="#ef4444" fill="transparent" strokeWidth={1.5} strokeDasharray="4 3" />
+              <Tooltip 
+                contentStyle={{ background: "#1e1e2e", border: "1px solid #7c3aed", borderRadius: "6px", fontSize: "12px" }}
+              />
+              <Radar name="Class Avg %" dataKey="classAvg" stroke={COLORS.absent} fill={COLORS.absent} fillOpacity={0.3} strokeWidth={2} />
+              <Radar name="Pass Threshold" dataKey="threshold" stroke={COLORS.danger} fill="transparent" strokeWidth={1.5} strokeDasharray="4 3" />
               <Legend formatter={(val) => <span style={{ color: COLORS.muted, fontSize: "11px" }}>{val}</span>} />
             </RadarChart>
           </ResponsiveContainer>
-          <div style={{
-            background: "#ef444412",
-            border: "1px solid #ef444430",
-            borderRadius: "6px",
-            padding: "10px 14px",
-            marginTop: "8px",
-            fontSize: "12px",
-            color: "#fca5a5",
-          }}>
-            🚨 <strong>CST306</strong> class average dips <strong>below the passing threshold</strong> — over 40% of students are failing this subject.
-          </div>
         </div>
 
-        {/* Wake-up call */}
+        {/* Call to action */}
         <div style={{
           background: "linear-gradient(135deg, #1a0000, #0a0a0f)",
-          border: "1px solid #ef444450",
+          border: `1px solid ${COLORS.danger}50`,
           borderRadius: "10px",
           padding: "22px",
           textAlign: "center",
-          position: "relative",
-          overflow: "hidden",
         }}>
-          <div style={{
-            position: "absolute", inset: 0,
-            background: "radial-gradient(ellipse at center, rgba(239,68,68,0.08) 0%, transparent 70%)",
-            pointerEvents: "none"
-          }} />
-          <div style={{ fontSize: "28px", marginBottom: "10px" }}>⏰</div>
-          <h3 style={{ color: "#ef4444", fontSize: "16px", letterSpacing: "2px", margin: "0 0 8px" }}>
+          <h3 style={{ color: COLORS.danger, fontSize: "16px", letterSpacing: "2px", margin: "0 0 8px" }}>
             THE NUMBERS DON'T LIE
           </h3>
           <p style={{ color: "#94a3b8", fontSize: "13px", lineHeight: "1.7", margin: "0 0 14px" }}>
-            <strong style={{ color: "#fff" }}>70% of the class</strong> is either failing at least one subject, sitting with dangerously low scores, or has missed exams entirely.
-            <br />
-            Exams are around the corner. <strong style={{ color: "#ef4444" }}>Now</strong> is the time to act.
+            Exams are around the corner. <strong style={{ color: COLORS.danger }}>Now</strong> is the time to act.
           </p>
           <div style={{
             display: "inline-block",
-            background: "#ef4444",
+            background: COLORS.danger,
             color: "#fff",
             padding: "8px 24px",
             borderRadius: "6px",
