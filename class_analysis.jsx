@@ -2,12 +2,12 @@ import { useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend } from "recharts";
 
 const subjectData = [
-  { subject: "AIT362", failures: 5, absents: 1, passing: 24, total: 30, avg: 34.2 },
-  { subject: "CDT304", failures: 7, absents: 4, passing: 19, total: 30, avg: 29.1 },
-  { subject: "CDT308", failures: 4, absents: 3, passing: 23, total: 30, avg: 33.4 },
-  { subject: "CST302", failures: 10, absents: 3, passing: 17, total: 30, avg: 28.3 },
-  { subject: "CST306", failures: 12, absents: 0, passing: 18, total: 30, avg: 24.6 },
-  { subject: "HUT300", failures: 1, absents: 3, passing: 26, total: 27, avg: 31.2 },
+  { subject: "AIT362-R", failures: 5, absents: 1, passing: 24, total: 30, avg: 34.2 },
+  { subject: "CDT304-MLC", failures: 7, absents: 4, passing: 19, total: 30, avg: 29.1 },
+  { subject: "CDT308-CCW", failures: 4, absents: 3, passing: 23, total: 30, avg: 33.4 },
+  { subject: "CST302-CD", failures: 10, absents: 3, passing: 17, total: 30, avg: 28.3 },
+  { subject: "CST306-AAD", failures: 12, absents: 0, passing: 18, total: 30, avg: 24.6 },
+  { subject: "HUT300-IEFT", failures: 1, absents: 3, passing: 26, total: 27, avg: 31.2 },
 ];
 
 const riskBuckets = [
